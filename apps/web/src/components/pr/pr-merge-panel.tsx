@@ -15,6 +15,8 @@ import {
 	GitBranch,
 	FilePenLine,
 	Wrench,
+	ExternalLink,
+	CircleCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useGlobalChat } from "@/components/shared/global-chat-provider";
@@ -33,6 +35,7 @@ import {
 	reopenPullRequest,
 	updatePRBranch,
 	convertPRToDraft,
+	markPRReadyForReview,
 	type MergeMethod,
 } from "@/app/(app)/repos/[owner]/[repo]/pulls/pr-actions";
 import { useMutationEvents } from "@/components/shared/mutation-event-provider";
@@ -114,7 +117,7 @@ export function PRMergePanel({
 	const [commitMessage, setCommitMessage] = useState("");
 	const [isPending, startTransition] = useTransition();
 	const [pendingAction, setPendingAction] = useState<
-		"merge" | "close" | "reopen" | "draft" | "updateBranch" | null
+		"merge" | "close" | "reopen" | "draft" | "ready" | "updateBranch" | null
 	>(null);
 	const [result, setResult] = useState<{ type: "success" | "error"; message: string } | null>(
 		null,
@@ -132,6 +135,7 @@ export function PRMergePanel({
 		isOpen && hasPermission && (branchBehindBase || mergeable === false);
 	const updateBranchDisabled = mergeable === false;
 	const canConvertToDraft = isOpen && (canWrite || isAuthor) && !draft;
+	const canMarkReady = isOpen && (canWrite || isAuthor) && draft;
 
 	useClickOutside(
 		dropdownRef,
@@ -330,9 +334,28 @@ export function PRMergePanel({
 			if (res.error) {
 				setResult({ type: "error", message: res.error });
 			} else {
-				setResult({ type: "success", message: "Converted to draft" });
 				emit({
 					type: "pr:converted_to_draft",
+					owner,
+					repo,
+					number: pullNumber,
+				});
+				invalidatePRQueries();
+				router.refresh();
+			}
+		});
+	};
+
+	const handleMarkReady = () => {
+		setResult(null);
+		setPendingAction("ready");
+		startTransition(async () => {
+			const res = await markPRReadyForReview(owner, repo, pullNumber);
+			if (res.error) {
+				setResult({ type: "error", message: res.error });
+			} else {
+				emit({
+					type: "pr:ready_for_review",
 					owner,
 					repo,
 					number: pullNumber,
@@ -461,7 +484,7 @@ export function PRMergePanel({
 								disabled={isPending}
 								className={cn(
 									"flex items-center self-stretch px-1.5 rounded-r-sm transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
-									mergeable === false
+									mergeable === false || draft
 										? "bg-amber-500/80 text-background hover:bg-amber-500/70"
 										: "bg-foreground text-background hover:bg-foreground/90",
 								)}
@@ -570,7 +593,10 @@ export function PRMergePanel({
 				)}
 
 				{/* Tools dropdown */}
-				{(showUpdateBranch || canConvertToDraft) && (
+				{(showUpdateBranch ||
+					canConvertToDraft ||
+					canMarkReady ||
+					isOpen) && (
 					<div ref={toolsDropdownRef} className="relative">
 						<button
 							onClick={() =>
@@ -645,6 +671,30 @@ export function PRMergePanel({
 											</span>
 										</button>
 									))}
+								{canMarkReady && (
+									<button
+										onClick={() => {
+											setToolsDropdownOpen(
+												false,
+											);
+											handleMarkReady();
+										}}
+										disabled={isPending}
+										className="w-full flex items-center gap-2 px-3 py-1.5 text-left text-muted-foreground hover:bg-muted/40 dark:hover:bg-white/[0.03] hover:text-foreground transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+									>
+										{isPending &&
+										pendingAction ===
+											"ready" ? (
+											<Loader2 className="w-3 h-3 shrink-0 animate-spin" />
+										) : (
+											<CircleCheck className="w-3 h-3 shrink-0" />
+										)}
+										<span className="text-xs">
+											Mark as
+											ready
+										</span>
+									</button>
+								)}
 								{canConvertToDraft && (
 									<button
 										onClick={() => {
@@ -669,6 +719,23 @@ export function PRMergePanel({
 										</span>
 									</button>
 								)}
+								<div className="border-t border-border/40 my-1" />
+								<a
+									href={`https://github.com/${owner}/${repo}/pull/${pullNumber}`}
+									target="_blank"
+									rel="noopener noreferrer"
+									onClick={() =>
+										setToolsDropdownOpen(
+											false,
+										)
+									}
+									className="w-full flex items-center gap-2 px-3 py-1.5 text-left text-muted-foreground hover:bg-muted/40 dark:hover:bg-white/[0.03] hover:text-foreground transition-colors cursor-pointer"
+								>
+									<ExternalLink className="w-3 h-3 shrink-0" />
+									<span className="text-xs">
+										Open in GitHub
+									</span>
+								</a>
 							</div>
 						)}
 					</div>
