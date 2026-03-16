@@ -1,0 +1,11 @@
+{
+  "name": "@gh-admin/shared",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@json-render/core": "^0.12.0",
+    "@json-render/shadcn": "^0.12.0",
+    "pino": "^10.3.1"
+  }
+}

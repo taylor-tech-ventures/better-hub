@@ -1,0 +1,7 @@
+packages:
+  - 'clients/*'
+  - 'packages/*'
+  - 'server'
+  - 'cli'
+patchedDependencies:
+  '@cloudflare/ai-chat@0.1.8': patches/@cloudflare__ai-chat@0.1.8.patch

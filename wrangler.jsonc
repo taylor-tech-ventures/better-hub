@@ -1,0 +1,221 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "gh-admin-com",
+  "compatibility_date": "2026-03-01",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "main": "server/index.ts",
+  "upload_source_maps": true,
+  "vars": {
+    "ENVIRONMENT": "local",
+    "CLOUDFLARE_ACCOUNT_ID": "16e8f7c4ab9857745900067adaee038a"
+  },
+  "workflows": [
+    {
+      "binding": "ADMIN_ACTION_WORKFLOW",
+      "name": "admin-action-workflow",
+      "class_name": "AdminActionWorkflow"
+    }
+  ],
+  "migrations": [
+    {
+      "new_sqlite_classes": [
+        "GitHubAgent",
+      ],
+      "tag": "v1"
+    },
+    {
+      "new_sqlite_classes": [
+        "GitHubAgentEvents"
+      ],
+      "tag": "v2"
+    },
+    {
+      "new_sqlite_classes": [
+        "PromptTemplateDO",
+        "GitHubMcpAgent"
+      ],
+      "tag": "v3"
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "GitHubAgent",
+        "class_name": "GitHubAgent"
+      },
+      {
+        "name": "GitHubAgentEvents",
+        "class_name": "GitHubAgentEvents"
+      },
+      {
+        "name": "PromptTemplateDO",
+        "class_name": "PromptTemplateDO"
+      },
+      {
+        "name": "GitHubMcpAgent",
+        "class_name": "GitHubMcpAgent"
+      }
+    ]
+  },
+  "d1_databases": [
+    {
+      "binding": "GH_ADMIN_D1_PRIMARY",
+      "database_id": "615d9f8a-1e43-4310-9a2a-2e39a59c0590",
+      "database_name": "gh-admin-dev",
+      "migrations_dir": "./server/db/migrations"
+    },
+  ],
+  "kv_namespaces": [
+    {
+      "binding": "OAUTH_KV",
+      "id": "6bd44c20d4a4442784df332092acf8f2"
+    },
+    {
+      "binding": "ANALYTICS_CACHE",
+      "id": "c20db943ea944fc7bc2668d2176f83a7"
+    }
+  ],
+  "analytics_engine_datasets": [
+    {
+      "binding": "GH_AGENT_TOOL_CALLS",
+      "dataset": "gh_admin_tool_calls_dev"
+    }
+  ],
+  "env": {
+    "dev": {
+      "workers_dev": true,
+      "vars": {
+        "ENVIRONMENT": "dev",
+        "CLOUDFLARE_ACCOUNT_ID": "16e8f7c4ab9857745900067adaee038a"
+      },
+      "workflows": [
+        {
+          "binding": "ADMIN_ACTION_WORKFLOW",
+          "name": "admin-action-workflow-dev",
+          "class_name": "AdminActionWorkflow"
+        }
+      ],
+      "durable_objects": {
+        "bindings": [
+          {
+            "name": "GitHubAgent",
+            "class_name": "GitHubAgent"
+          },
+          {
+            "name": "GitHubAgentEvents",
+            "class_name": "GitHubAgentEvents"
+          },
+          {
+            "name": "PromptTemplateDO",
+            "class_name": "PromptTemplateDO"
+          },
+          {
+            "name": "GitHubMcpAgent",
+            "class_name": "GitHubMcpAgent"
+          }
+        ]
+      },
+      "r2_buckets": [
+        {
+          "binding": "AUTH_R2_BUCKET",
+          "bucket_name": "gh-admin-auth-dev",
+        },
+      ],
+      "d1_databases": [
+        {
+          "binding": "GH_ADMIN_D1_PRIMARY",
+          "database_id": "615d9f8a-1e43-4310-9a2a-2e39a59c0590",
+          "database_name": "gh-admin-dev",
+          "migrations_dir": "./server/db/migrations"
+        },
+      ],
+      "kv_namespaces": [
+        {
+          "binding": "OAUTH_KV",
+          "id": "6bd44c20d4a4442784df332092acf8f2"
+        },
+        {
+          "binding": "ANALYTICS_CACHE",
+          "id": "c20db943ea944fc7bc2668d2176f83a7"
+        }
+      ],
+      "analytics_engine_datasets": [
+        {
+          "binding": "GH_AGENT_TOOL_CALLS",
+          "dataset": "gh_admin_tool_calls_dev"
+        }
+      ]
+    },
+    "prod": {
+      "route": "gh-admin.com/*",
+      "vars": {
+        "ENVIRONMENT": "prod"
+      },
+      "workflows": [
+        {
+          "binding": "ADMIN_ACTION_WORKFLOW",
+          "name": "admin-action-workflow",
+          "class_name": "AdminActionWorkflow"
+        }
+      ],
+      "durable_objects": {
+        "bindings": [
+          {
+            "name": "GitHubAgent",
+            "class_name": "GitHubAgent"
+          },
+          {
+            "name": "GitHubAgentEvents",
+            "class_name": "GitHubAgentEvents"
+          },
+          {
+            "name": "PromptTemplateDO",
+            "class_name": "PromptTemplateDO"
+          },
+          {
+            "name": "GitHubMcpAgent",
+            "class_name": "GitHubMcpAgent"
+          }
+        ]
+      },
+      "r2_buckets": [
+        {
+          "binding": "AUTH_R2_BUCKET",
+          "bucket_name": "gh-admin-auth-prod",
+        },
+      ],
+      "d1_databases": [
+        {
+          "binding": "GH_ADMIN_D1_PRIMARY",
+          "database_id": "ef55921f-a00f-41aa-b84e-2717f8b4b4fd",
+          "database_name": "gh-admin-prod",
+          "migrations_dir": "./server/db/migrations"
+        },
+      ],
+      "kv_namespaces": [
+        {
+          "binding": "OAUTH_KV",
+          "id": "183a095b443f41029b8560db397d7ed9"
+        },
+        {
+          "binding": "ANALYTICS_CACHE",
+          "id": "c184b75bba6b4818a26fbb4502e4a75e"
+        }
+      ],
+      "analytics_engine_datasets": [
+        {
+          "binding": "GH_AGENT_TOOL_CALLS",
+          "dataset": "gh_admin_tool_calls_prod"
+        }
+      ]
+    }
+  },
+  "observability": {
+    "enabled": true
+  },
+  "dev": {
+    "port": 3000
+  }
+}

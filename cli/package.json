@@ -1,0 +1,74 @@
+{
+  "name": "@gh-admin/cli",
+  "version": "0.1.0",
+  "description": "CLI for gh-admin.com — GitHub organization administration with AI",
+  "type": "module",
+  "bin": {
+    "gh-admin": "./dist/bin/run.js"
+  },
+  "main": "dist/index.js",
+  "files": [
+    "dist",
+    "bin"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/bin/dev.ts",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "lint": "biome check",
+    "lint:fix": "biome check --write",
+    "bundle": "ncc build dist/bin/run.js -o bundle --minify",
+    "sea": "bash scripts/build-sea.sh"
+  },
+  "oclif": {
+    "bin": "gh-admin",
+    "dirname": "gh-admin",
+    "commands": {
+      "strategy": "pattern",
+      "target": "./dist/commands"
+    },
+    "topicSeparator": " ",
+    "topics": {
+      "auth": {
+        "description": "Authentication management"
+      },
+      "chat": {
+        "description": "AI chat interface"
+      },
+      "org": {
+        "description": "Organization management"
+      },
+      "billing": {
+        "description": "Subscription & billing"
+      },
+      "config": {
+        "description": "CLI configuration"
+      }
+    },
+    "plugins": [
+      "@oclif/plugin-help",
+      "@oclif/plugin-autocomplete"
+    ]
+  },
+  "dependencies": {
+    "@oclif/core": "^4.2.10",
+    "@oclif/plugin-help": "^6.2.27",
+    "@oclif/plugin-autocomplete": "^3.2.22",
+    "@orpc/client": "^1.13.6",
+    "chalk": "^5.4.1",
+    "cli-table3": "^0.6.5",
+    "conf": "^13.1.0",
+    "marked": "^17.0.4",
+    "marked-terminal": "^7.3.0",
+    "open": "^10.1.2",
+    "ora": "^8.2.0",
+    "ws": "^8.18.2"
+  },
+  "devDependencies": {
+    "@types/ws": "^8.18.1",
+    "tsx": "^4.19.4",
+    "typescript": "^5.9.3",
+    "@vercel/ncc": "^0.38.3"
+  }
+}
