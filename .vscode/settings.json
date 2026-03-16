@@ -1,22 +1,13 @@
 {
-	"oxc.enable": true,
-	"oxc.fmt.configPath": ".oxfmtrc.json",
-	"editor.defaultFormatter": "oxc.oxc-vscode",
+	"editor.defaultFormatter": "biomejs.biome",
 	"editor.formatOnSave": true,
-	"[javascript]": {
-		"editor.defaultFormatter": "oxc.oxc-vscode",
-		"editor.formatOnSave": true
+	"editor.codeActionsOnSave": {
+		"quickfix.biome": "always"
 	},
-	"[typescript]": {
-		"editor.defaultFormatter": "oxc.oxc-vscode",
-		"editor.formatOnSave": true
-	},
-	"[javascriptreact]": {
-		"editor.defaultFormatter": "oxc.oxc-vscode",
-		"editor.formatOnSave": true
-	},
-	"[typescriptreact]": {
-		"editor.defaultFormatter": "oxc.oxc-vscode",
-		"editor.formatOnSave": true
+	"chat.tools.terminal.autoApprove": {
+		"/^pnpm -s typecheck$/": {
+			"approve": true,
+			"matchCommandLine": true
+		}
 	}
 }
