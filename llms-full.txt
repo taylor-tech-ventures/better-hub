@@ -1,0 +1,94 @@
+# GH Admin — Full Architecture Reference
+
+## Stack
+
+- **Runtime**: Cloudflare Workers (nodejs_compat)
+- **Framework**: TanStack Start v1 (file-based routing, server functions)
+- **Auth**: Better Auth with GitHub OAuth (App + PKCE)
+- **Database**: Cloudflare D1 (SQLite) via Drizzle ORM
+- **AI Agent**: Cloudflare Agents SDK — `AIChatAgent` extended as `GitHubAgent` Durable Object
+- **AI SDK**: Vercel AI SDK v5 (`streamText`, `convertToModelMessages`, `stepCountIs`)
+- **API layer**: oRPC (`@orpc/server`, `@orpc/client`) — contract-first typed HTTP procedures
+- **Generative UI**: json-render (`@json-render/core`, `@json-render/react`, `@json-render/shadcn`)
+- **UI**: React 19, Tailwind CSS v4, shadcn/ui components
+- **Workflows**: Cloudflare Workflows (`AdminActionWorkflow`) — human-in-the-loop approval
+
+## Key File Paths
+
+### Server
+- `server/index.ts` — Worker entrypoint; exports `GitHubAgent`, `AdminActionWorkflow`
+- `server/auth/index.ts` — Better Auth instance; token push hook to GitHubAgent DO
+- `server/durable-objects/github-agent.ts` — `GitHubAgent` extends `AIChatAgent`; SQLite for tokens + preferences; `onChatMessage` with json-render stream
+- `server/agent/tools/index.ts` — GitHub tools via `implementTool(contract, { execute })`
+- `server/agent/tools/contracts.ts` — oRPC contracts (single source of truth for tool schemas)
+- `server/orpc/router.ts` — oRPC router (preferences procedures)
+- `server/orpc/middleware.ts` — `base` context + `authorized` middleware (Better Auth session)
+- `server/data-access-layer/preferences.ts` — DO stub calls for user preferences
+- `server/functions/preferences.ts` — `getThemePreference` server function
+- `server/workflows/admin-action.ts` — `AdminActionWorkflow` with `step.waitForEvent`
+- `server/functions/workflows.ts` — `triggerAdminAction`, `approveAdminAction` server functions
+
+### Client
+- `client/routes/__root.tsx` — session + theme loaded in `beforeLoad`; ThemeProvider wraps body
+- `client/routes/index.tsx` — login/home page
+- `client/routes/dashboard/route.tsx` — auth guard + AppShell layout (menubar + drawers)
+- `client/routes/dashboard/index.tsx` — Command Center overview with workflow action cards
+- `client/routes/dashboard/chat.tsx` — full-page ChatInterface
+- `client/routes/api/orpc.$.ts` — oRPC HTTP catch-all handler
+- `client/components/layout/app-menubar.tsx` — VSCode-style top bar (View menu, Settings/theme, panel toggles)
+- `client/components/layout/nav-drawer.tsx` — left nav drawer
+- `client/components/layout/ai-drawer.tsx` — right AI assistant drawer
+- `client/components/ui/chat/interface.tsx` — `ChatInterface` with `useAgentChat`, json-render `MessageParts`
+- `client/json-render/registry.tsx` — json-render React registry
+- `client/json-render/renderer.tsx` — `ExplorerRenderer` (StateProvider + Renderer)
+- `client/lib/orpc.ts` — oRPC typed client
+
+### Shared
+- `shared/json-render/catalog.ts` — `explorerCatalog` definition
+
+## oRPC Router Shape
+
+```
+preferences
+  .get    — input: { key: string }         → string | null
+  .set    — input: { key: string, value: string } → void
+  .getAll — (no input)                      → Record<string, string>
+```
+
+All procedures require a valid Better Auth session (via `authorized` middleware).
+
+## json-render Catalog Components
+
+Shadcn base: Stack, Card, Grid, Heading, Separator, Accordion, Progress, Skeleton, Badge, Alert
+
+Custom: Text, Metric, Table, Link, BarChart, LineChart, Tabs, TabContent, Callout, Timeline, PieChart, RadioGroup, SelectInput, TextInput, Button
+
+Generate system prompt via `explorerCatalog.prompt()`.
+Stream transformation: `pipeJsonRender(result.toUIMessageStream())` inside `createUIMessageStream`.
+Client hook: `useJsonRenderMessage(message.parts)` → `{ spec, hasSpec }`.
+
+## Wrangler Bindings
+
+| Binding | Type | Purpose |
+|---------|------|---------|
+| `GitHubAgent` | Durable Object (SQLite) | Stateful AI agent per user |
+| `AdminActionWorkflow` | Workflow | Human-in-the-loop admin actions |
+| `GH_ADMIN_D1_PRIMARY` | D1 | Auth + app database |
+| `OAUTH_KV` | KV | OAuth token storage |
+| `GH_AGENT_TOOL_CALLS` | Analytics Engine | Tool call telemetry |
+| `AUTH_R2_BUCKET` | R2 | Auth data storage (dev/prod) |
+
+## Auth Flow
+
+1. User signs in via GitHub App OAuth (PKCE, offline access)
+2. Better Auth `afterSignIn` hook calls `GitHubAgent.setTokens()` via DO stub
+3. DO stores tokens in SQLite; schedules proactive refresh 5 min before expiry
+4. Route `beforeLoad` in `dashboard/route.tsx` enforces session; redirects to `/` if missing
+
+## Workflow: Human-in-the-Loop
+
+1. AI suggests destructive action → dashboard shows "Requires confirmation" card
+2. `triggerAdminAction()` server function creates a Workflow instance
+3. `step.waitForEvent('human-approval', { timeout: '24 hours' })` pauses execution
+4. User approves/denies via `approveAdminAction()` → event sent to workflow instance
+5. Workflow resumes, executes or records denial

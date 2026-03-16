@@ -1,0 +1,11 @@
+{
+  "name": "@gh-admin/mcp",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@cloudflare/workers-oauth-provider": "^0.3.0",
+    "@modelcontextprotocol/sdk": "^1.27.1",
+    "agents": "^0.7.5"
+  }
+}

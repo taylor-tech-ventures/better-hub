@@ -1,0 +1,42 @@
+{
+  "enabledPlugins": {
+    "postman@claude-plugins-official": true
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/setup-cloud-session.sh"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/docs-update-reminder.sh"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/docs-update-stop.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/verify-before-stop.sh"
+          }
+        ]
+      }
+    ]
+  }
+}

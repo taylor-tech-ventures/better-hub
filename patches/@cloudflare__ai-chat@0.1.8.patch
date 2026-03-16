@@ -1,0 +1,71 @@
+diff --git a/dist/index.js b/dist/index.js
+index 066f90ee0e7455b27e1bbafe68adee7e986fc93a..ab34bde53702feb85856b08b72142f34ac1ce0ea 100644
+--- a/dist/index.js
++++ b/dist/index.js
+@@ -1550,8 +1550,32 @@ var AIChatAgent = class AIChatAgent extends Agent {
+ 				}
+ 			}
+ 			if (message.parts.length > 0) if (earlyPersistedId) {
+-				const updatedMessages = this.messages.map((msg) => msg.id === earlyPersistedId ? message : msg);
+-				await this.persistMessages(updatedMessages, excludeBroadcastIds);
++				this.messages = autoTransformMessages(this._loadMessagesFromDb());
++				if (continuation) {
++					this.sql`delete from cf_ai_chat_agent_messages where id = ${earlyPersistedId}`;
++					this._persistedMessageCache.delete(earlyPersistedId);
++					this.messages = autoTransformMessages(this._loadMessagesFromDb());
++					let lastAssistantIdx = -1;
++					for (let i = this.messages.length - 1; i >= 0; i--) if (this.messages[i].role === "assistant") {
++						lastAssistantIdx = i;
++						break;
++					}
++					if (lastAssistantIdx >= 0) {
++						const lastAssistant = this.messages[lastAssistantIdx];
++						const mergedMessage = {
++							...lastAssistant,
++							parts: [...lastAssistant.parts, ...message.parts]
++						};
++						const updatedMessages = [...this.messages];
++						updatedMessages[lastAssistantIdx] = mergedMessage;
++						await this.persistMessages(updatedMessages, excludeBroadcastIds);
++					} else {
++						await this.persistMessages([...this.messages, message], excludeBroadcastIds);
++					}
++				} else {
++					const updatedMessages = this.messages.map((msg) => msg.id === earlyPersistedId ? message : msg);
++					await this.persistMessages(updatedMessages, excludeBroadcastIds);
++				}
+ 			} else if (continuation) {
+ 				let lastAssistantIdx = -1;
+ 				for (let i = this.messages.length - 1; i >= 0; i--) if (this.messages[i].role === "assistant") {
+diff --git a/dist/react.js b/dist/react.js
+index 702d1f191b4855655d3b0c613d1a3ff9999821c1..433c95715f0ff8809cca8ca5930a7ede3883b5a5 100644
+--- a/dist/react.js
++++ b/dist/react.js
+@@ -547,6 +547,18 @@ function useAgentChat(options) {
+ 					setMessages([]);
+ 					break;
+ 				case MessageType.CF_AGENT_CHAT_MESSAGES:
++					if (activeStreamRef.current) {
++						const activeMsg = activeStreamRef.current;
++						const stillExists = data.messages.some((m) => m.id === activeMsg.messageId);
++						if (!stillExists) {
++							for (let i = data.messages.length - 1; i >= 0; i--) {
++								if (data.messages[i].role === "assistant") {
++									activeMsg.messageId = data.messages[i].id;
++									break;
++								}
++							}
++						}
++					}
+ 					setMessages(data.messages);
+ 					break;
+ 				case MessageType.CF_AGENT_MESSAGE_UPDATED:
+@@ -616,7 +628,7 @@ function useAgentChat(options) {
+ 						const handled = applyChunkToParts(activeMsg.parts, chunkData);
+ 						if (typeof chunkData.type === "string" && chunkData.type.startsWith("data-") && onDataRef.current) onDataRef.current(chunkData);
+ 						if (!handled && (chunkData.type === "start" || chunkData.type === "finish" || chunkData.type === "message-metadata")) {
+-							if (chunkData.messageId != null && chunkData.type === "start") activeMsg.messageId = chunkData.messageId;
++							if (chunkData.messageId != null && chunkData.type === "start" && !isContinuation) activeMsg.messageId = chunkData.messageId;
+ 							if (chunkData.messageMetadata != null) activeMsg.metadata = activeMsg.metadata ? {
+ 								...activeMsg.metadata,
+ 								...chunkData.messageMetadata
