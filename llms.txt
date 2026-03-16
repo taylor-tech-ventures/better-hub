@@ -1,0 +1,7 @@
+# GH Admin
+
+> GitHub Enterprise organization administration assistant. Built on TanStack Start + Cloudflare Workers with stateful AI agents, oRPC, and generative UI via json-render.
+
+## Docs
+
+- [Full architecture reference](/llms-full.txt)

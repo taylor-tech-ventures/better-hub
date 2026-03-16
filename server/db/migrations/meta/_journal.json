@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1755056892711,
+      "tag": "0000_melodic_doctor_doom",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1755540982741,
+      "tag": "0001_giant_lyja",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1741737600000,
+      "tag": "0003_scheduled_tasks",
+      "breakpoints": true
+    }
+  ]
+}
